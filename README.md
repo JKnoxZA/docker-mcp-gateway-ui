@@ -1,6 +1,6 @@
 # MCP Docker Gateway Frontend
 
-A comprehensive web-based management platform for Model Context Protocol (MCP) servers with Docker integration.
+A comprehensive web-based management platform for Model Context Protocol (MCP) servers with Docker integrations.
 
 ## 🎯 Overview
 

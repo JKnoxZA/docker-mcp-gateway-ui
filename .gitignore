@@ -300,3 +300,4 @@ data/
 .build/
 .deployment/
 proect-docs/CLAUDE.md
+.history/
