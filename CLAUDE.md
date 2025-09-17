@@ -3,10 +3,10 @@
 This document provides essential context for Claude Code sessions working on the MCP Docker Gateway Frontend project.
 
 ## IMPORTANT!!
-- **always read PLANNING.md at the start of every new conversation**
-- **check TASKS.md before starting your work**
-- **mark completed tasks immediately**
-- **add newly discovered tasks**
+- **always read project-docs/PLANNING.md at the start of every new conversation**
+- **check project-docs/TASKS.md before starting your work**
+  - **mark completed tasks immediately**
+  - **add newly discovered tasks**
 
 ## Project Overview
 

@@ -8,8 +8,14 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal, init_db
-from app.models.database import (BuildLog, DockerContainer, MCPProject,
-                                 MCPServer, MCPTemplate, ProjectFile)
+from app.models.database import (
+    BuildLog,
+    DockerContainer,
+    MCPProject,
+    MCPServer,
+    MCPTemplate,
+    ProjectFile,
+)
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
