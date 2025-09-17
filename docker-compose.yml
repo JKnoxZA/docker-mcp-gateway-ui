@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # Frontend - React with Vite
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - mcp-network
+
+  # Backend - FastAPI
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket access
+      - mcp-config:/config
+      - mcp-workspace:/tmp/mcp_workspace
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://admin:password@postgres:5432/mcp_gateway
+      - REDIS_URL=redis://redis:6379
+      - DEBUG=true
+      - LOG_LEVEL=INFO
+      - MCP_CONFIG_PATH=/config
+      - MCP_WORKSPACE_PATH=/tmp/mcp_workspace
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - mcp-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=mcp_gateway
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - mcp-network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - mcp-network
+
+  # Development utilities
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+    depends_on:
+      - postgres
+    networks:
+      - mcp-network
+    profiles:
+      - utilities
+
+  # Redis Commander for Redis management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - mcp-network
+    profiles:
+      - utilities
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  mcp-config:
+    driver: local
+  mcp-workspace:
+    driver: local
+
+networks:
+  mcp-network:
+    driver: bridge
