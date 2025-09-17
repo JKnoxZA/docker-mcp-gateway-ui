@@ -15,15 +15,15 @@ jest.mock('../hooks/useAPI', () => ({
   useGatewayStatus: () => ({ data: null, isLoading: false }),
 }))
 
+import App from '../App'
+
 describe('App Component', () => {
   it('exports App component', () => {
-    const App = require('../App').default
     expect(App).toBeDefined()
     expect(typeof App).toBe('function')
   })
 
   it('has correct function name', () => {
-    const App = require('../App').default
     expect(App.name).toBe('App')
   })
 })
