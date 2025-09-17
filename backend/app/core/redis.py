@@ -90,7 +90,7 @@ class RedisClient:
         if not self.redis:
             return False
 
-        await self.redis.lpush(
+        await self.redis.lpush(  # type: ignore
             "build_queue", json.dumps({"build_id": build_id, **job_data})
         )
         await self.set(f"build:{build_id}", job_data, expire=3600)  # 1 hour
@@ -100,7 +100,7 @@ class RedisClient:
         if not self.redis:
             return None
 
-        job_data = await self.redis.brpop("build_queue", timeout=1)
+        job_data = await self.redis.brpop(["build_queue"], timeout=1)  # type: ignore
         if job_data:
             return json.loads(job_data[1])
         return None
@@ -119,21 +119,21 @@ class RedisClient:
         if not self.redis:
             return False
 
-        await self.redis.sadd(f"ws_connections:{room}", connection_id)
+        await self.redis.sadd(f"ws_connections:{room}", connection_id)  # type: ignore
 
     async def remove_websocket_connection(self, room: str, connection_id: str):
         """Remove WebSocket connection from room"""
         if not self.redis:
             return False
 
-        await self.redis.srem(f"ws_connections:{room}", connection_id)
+        await self.redis.srem(f"ws_connections:{room}", connection_id)  # type: ignore
 
     async def get_websocket_connections(self, room: str) -> list:
         """Get all WebSocket connections in room"""
         if not self.redis:
             return []
 
-        connections = await self.redis.smembers(f"ws_connections:{room}")
+        connections = await self.redis.smembers(f"ws_connections:{room}")  # type: ignore
         return list(connections)
 
     # Event publishing for real-time updates
