@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.security import HTTPBearer
 import logging
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPBearer
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

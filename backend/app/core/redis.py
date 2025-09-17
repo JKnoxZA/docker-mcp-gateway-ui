@@ -1,7 +1,8 @@
-import redis.asyncio as redis
 import json
-from typing import Any, Optional
 from datetime import timedelta
+from typing import Any, Optional
+
+import redis.asyncio as redis
 
 from app.config.settings import settings
 
@@ -15,9 +16,7 @@ class RedisClient:
     async def connect(self):
         """Connect to Redis server"""
         self.redis = redis.from_url(
-            settings.REDIS_URL,
-            password=settings.REDIS_PASSWORD,
-            decode_responses=True
+            settings.REDIS_URL, password=settings.REDIS_PASSWORD, decode_responses=True
         )
         # Test connection
         await self.redis.ping()
@@ -71,13 +70,11 @@ class RedisClient:
         return bool(await self.redis.expire(key, seconds))
 
     # Session management methods
-    async def set_session(self, session_id: str, user_data: dict, expire_minutes: int = 30):
+    async def set_session(
+        self, session_id: str, user_data: dict, expire_minutes: int = 30
+    ):
         """Set user session data"""
-        await self.set(
-            f"session:{session_id}",
-            user_data,
-            expire=expire_minutes * 60
-        )
+        await self.set(f"session:{session_id}", user_data, expire=expire_minutes * 60)
 
     async def get_session(self, session_id: str) -> Optional[dict]:
         """Get user session data"""
@@ -93,10 +90,9 @@ class RedisClient:
         if not self.redis:
             return False
 
-        await self.redis.lpush("build_queue", json.dumps({
-            "build_id": build_id,
-            **job_data
-        }))
+        await self.redis.lpush(
+            "build_queue", json.dumps({"build_id": build_id, **job_data})
+        )
         await self.set(f"build:{build_id}", job_data, expire=3600)  # 1 hour
 
     async def pop_build_job(self) -> Optional[dict]:
@@ -158,12 +154,16 @@ class RedisClient:
         return pubsub
 
     # API caching methods
-    async def cache_api_response(self, endpoint: str, params: str, response_data: Any, ttl: int = 900):
+    async def cache_api_response(
+        self, endpoint: str, params: str, response_data: Any, ttl: int = 900
+    ):
         """Cache API response for 15 minutes by default"""
         cache_key = f"api_cache:{endpoint}:{params}"
         await self.set(cache_key, response_data, expire=ttl)
 
-    async def get_cached_api_response(self, endpoint: str, params: str) -> Optional[Any]:
+    async def get_cached_api_response(
+        self, endpoint: str, params: str
+    ) -> Optional[Any]:
         """Get cached API response"""
         cache_key = f"api_cache:{endpoint}:{params}"
         return await self.get(cache_key)

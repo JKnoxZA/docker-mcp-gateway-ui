@@ -8,14 +8,8 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal, init_db
-from app.models.database import (
-    MCPProject,
-    MCPTemplate,
-    DockerContainer,
-    BuildLog,
-    MCPServer,
-    ProjectFile,
-)
+from app.models.database import (BuildLog, DockerContainer, MCPProject,
+                                 MCPServer, MCPTemplate, ProjectFile)
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -32,14 +26,14 @@ async def create_sample_templates(session: AsyncSession) -> List[MCPTemplate]:
             template_files={
                 "main.py": "# Basic MCP Server\nfrom fastapi import FastAPI\n\napp = FastAPI()",
                 "requirements.txt": "fastapi>=0.104.0\nuvicorn>=0.24.0",
-                "Dockerfile": "FROM python:3.11-slim\nWORKDIR /app\nCOPY . .\nRUN pip install -r requirements.txt\nCMD ['uvicorn', 'main:app', '--host', '0.0.0.0']"
+                "Dockerfile": "FROM python:3.11-slim\nWORKDIR /app\nCOPY . .\nRUN pip install -r requirements.txt\nCMD ['uvicorn', 'main:app', '--host', '0.0.0.0']",
             },
             default_config={
                 "port": 8000,
                 "environment": "development",
-                "auto_reload": True
+                "auto_reload": True,
             },
-            tags=["python", "fastapi", "basic"]
+            tags=["python", "fastapi", "basic"],
         ),
         MCPTemplate(
             name="Node.js MCP Server",
@@ -49,13 +43,10 @@ async def create_sample_templates(session: AsyncSession) -> List[MCPTemplate]:
             template_files={
                 "server.js": "const express = require('express');\nconst app = express();\n\napp.listen(3000);",
                 "package.json": '{"name": "mcp-server", "dependencies": {"express": "^4.18.0"}}',
-                "Dockerfile": "FROM node:18-alpine\nWORKDIR /app\nCOPY . .\nRUN npm install\nCMD ['node', 'server.js']"
+                "Dockerfile": "FROM node:18-alpine\nWORKDIR /app\nCOPY . .\nRUN npm install\nCMD ['node', 'server.js']",
             },
-            default_config={
-                "port": 3000,
-                "environment": "development"
-            },
-            tags=["nodejs", "express", "javascript"]
+            default_config={"port": 3000, "environment": "development"},
+            tags=["nodejs", "express", "javascript"],
         ),
         MCPTemplate(
             name="Go MCP Server",
@@ -63,16 +54,13 @@ async def create_sample_templates(session: AsyncSession) -> List[MCPTemplate]:
             language="go",
             framework="gin",
             template_files={
-                "main.go": "package main\n\nimport \"github.com/gin-gonic/gin\"\n\nfunc main() {\n\tr := gin.Default()\n\tr.Run()\n}",
+                "main.go": 'package main\n\nimport "github.com/gin-gonic/gin"\n\nfunc main() {\n\tr := gin.Default()\n\tr.Run()\n}',
                 "go.mod": "module mcp-server\n\ngo 1.21\n\nrequire github.com/gin-gonic/gin v1.9.1",
-                "Dockerfile": "FROM golang:1.21-alpine AS builder\nWORKDIR /app\nCOPY . .\nRUN go build -o server\n\nFROM alpine:latest\nRUN apk --no-cache add ca-certificates\nWORKDIR /root/\nCOPY --from=builder /app/server .\nCMD ['./server']"
+                "Dockerfile": "FROM golang:1.21-alpine AS builder\nWORKDIR /app\nCOPY . .\nRUN go build -o server\n\nFROM alpine:latest\nRUN apk --no-cache add ca-certificates\nWORKDIR /root/\nCOPY --from=builder /app/server .\nCMD ['./server']",
             },
-            default_config={
-                "port": 8080,
-                "environment": "development"
-            },
-            tags=["go", "gin", "performance"]
-        )
+            default_config={"port": 8080, "environment": "development"},
+            tags=["go", "gin", "performance"],
+        ),
     ]
 
     for template in templates:
@@ -82,7 +70,9 @@ async def create_sample_templates(session: AsyncSession) -> List[MCPTemplate]:
     return templates
 
 
-async def create_sample_projects(session: AsyncSession, templates: List[MCPTemplate]) -> List[MCPProject]:
+async def create_sample_projects(
+    session: AsyncSession, templates: List[MCPTemplate]
+) -> List[MCPProject]:
     """Create sample MCP projects"""
     projects = [
         MCPProject(
@@ -92,15 +82,15 @@ async def create_sample_projects(session: AsyncSession, templates: List[MCPTempl
             config={
                 "port": 8001,
                 "environment": "development",
-                "features": ["chat", "websocket", "auth"]
+                "features": ["chat", "websocket", "auth"],
             },
             status="running",
             docker_image="demo-chat-mcp:latest",
             docker_config={
                 "image": "demo-chat-mcp:latest",
                 "ports": {"8001/tcp": 8001},
-                "environment": ["ENV=development"]
-            }
+                "environment": ["ENV=development"],
+            },
         ),
         MCPProject(
             name="File Manager MCP",
@@ -109,10 +99,10 @@ async def create_sample_projects(session: AsyncSession, templates: List[MCPTempl
             config={
                 "port": 3001,
                 "environment": "development",
-                "features": ["file-upload", "file-management", "permissions"]
+                "features": ["file-upload", "file-management", "permissions"],
             },
             status="stopped",
-            docker_image="file-manager-mcp:latest"
+            docker_image="file-manager-mcp:latest",
         ),
         MCPProject(
             name="High Performance API",
@@ -121,10 +111,10 @@ async def create_sample_projects(session: AsyncSession, templates: List[MCPTempl
             config={
                 "port": 8080,
                 "environment": "production",
-                "features": ["api", "rate-limiting", "metrics"]
+                "features": ["api", "rate-limiting", "metrics"],
             },
-            status="building"
-        )
+            status="building",
+        ),
     ]
 
     for project in projects:
@@ -146,7 +136,7 @@ async def create_sample_containers(session: AsyncSession, projects: List[MCPProj
             ports={"8001/tcp": [{"HostIp": "0.0.0.0", "HostPort": "8001"}]},
             environment=["ENV=development", "PORT=8001"],
             created_at=datetime.utcnow() - timedelta(hours=2),
-            started_at=datetime.utcnow() - timedelta(hours=2)
+            started_at=datetime.utcnow() - timedelta(hours=2),
         ),
         DockerContainer(
             project_id=projects[1].id,
@@ -158,8 +148,8 @@ async def create_sample_containers(session: AsyncSession, projects: List[MCPProj
             environment=["ENV=development", "PORT=3001"],
             created_at=datetime.utcnow() - timedelta(days=1),
             started_at=datetime.utcnow() - timedelta(days=1),
-            finished_at=datetime.utcnow() - timedelta(hours=6)
-        )
+            finished_at=datetime.utcnow() - timedelta(hours=6),
+        ),
     ]
 
     for container in containers:
@@ -179,10 +169,10 @@ async def create_sample_servers(session: AsyncSession, projects: List[MCPProject
             config={
                 "transport": "http",
                 "capabilities": ["chat", "websocket"],
-                "auth": {"type": "bearer"}
+                "auth": {"type": "bearer"},
             },
             last_health_check=datetime.utcnow() - timedelta(minutes=5),
-            health_status="healthy"
+            health_status="healthy",
         ),
         MCPServer(
             project_id=projects[1].id,
@@ -192,11 +182,11 @@ async def create_sample_servers(session: AsyncSession, projects: List[MCPProject
             config={
                 "transport": "http",
                 "capabilities": ["file-ops", "permissions"],
-                "auth": {"type": "api-key"}
+                "auth": {"type": "api-key"},
             },
             last_health_check=datetime.utcnow() - timedelta(hours=6),
-            health_status="unhealthy"
-        )
+            health_status="unhealthy",
+        ),
     ]
 
     for server in servers:
@@ -214,7 +204,7 @@ async def create_sample_build_logs(session: AsyncSession, projects: List[MCPProj
             stage="setup",
             message="Starting build process...",
             level="info",
-            timestamp=datetime.utcnow() - timedelta(hours=3)
+            timestamp=datetime.utcnow() - timedelta(hours=3),
         ),
         BuildLog(
             project_id=projects[0].id,
@@ -222,7 +212,7 @@ async def create_sample_build_logs(session: AsyncSession, projects: List[MCPProj
             stage="dependencies",
             message="Installing Python dependencies...",
             level="info",
-            timestamp=datetime.utcnow() - timedelta(hours=3, minutes=-2)
+            timestamp=datetime.utcnow() - timedelta(hours=3, minutes=-2),
         ),
         BuildLog(
             project_id=projects[0].id,
@@ -230,7 +220,7 @@ async def create_sample_build_logs(session: AsyncSession, projects: List[MCPProj
             stage="build",
             message="Building Docker image...",
             level="info",
-            timestamp=datetime.utcnow() - timedelta(hours=3, minutes=-5)
+            timestamp=datetime.utcnow() - timedelta(hours=3, minutes=-5),
         ),
         BuildLog(
             project_id=projects[0].id,
@@ -238,7 +228,7 @@ async def create_sample_build_logs(session: AsyncSession, projects: List[MCPProj
             stage="complete",
             message="Build completed successfully",
             level="success",
-            timestamp=datetime.utcnow() - timedelta(hours=3, minutes=-8)
+            timestamp=datetime.utcnow() - timedelta(hours=3, minutes=-8),
         ),
         BuildLog(
             project_id=projects[2].id,
@@ -246,7 +236,7 @@ async def create_sample_build_logs(session: AsyncSession, projects: List[MCPProj
             stage="setup",
             message="Starting Go build process...",
             level="info",
-            timestamp=datetime.utcnow() - timedelta(minutes=30)
+            timestamp=datetime.utcnow() - timedelta(minutes=30),
         ),
         BuildLog(
             project_id=projects[2].id,
@@ -254,8 +244,8 @@ async def create_sample_build_logs(session: AsyncSession, projects: List[MCPProj
             stage="compile",
             message="Compiling Go modules...",
             level="info",
-            timestamp=datetime.utcnow() - timedelta(minutes=25)
-        )
+            timestamp=datetime.utcnow() - timedelta(minutes=25),
+        ),
     ]
 
     for log in logs:
@@ -294,7 +284,7 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.send_text("Connected to Demo Chat MCP")
 """,
             file_size=512,
-            mime_type="text/x-python"
+            mime_type="text/x-python",
         ),
         ProjectFile(
             project_id=projects[0].id,
@@ -304,7 +294,7 @@ uvicorn>=0.24.0
 websockets>=11.0.0
 """,
             file_size=64,
-            mime_type="text/plain"
+            mime_type="text/plain",
         ),
         ProjectFile(
             project_id=projects[1].id,
@@ -331,8 +321,8 @@ app.listen(3001, () => {
 });
 """,
             file_size=432,
-            mime_type="application/javascript"
-        )
+            mime_type="application/javascript",
+        ),
     ]
 
     for file in files:

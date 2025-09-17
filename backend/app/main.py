@@ -1,12 +1,13 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import uvicorn
 import logging
 from contextlib import asynccontextmanager
 
-from app.config.settings import settings
+import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 from app.api.routes import api_router
+from app.config.settings import settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,12 +21,14 @@ async def lifespan(app: FastAPI):
     logger.info("Starting MCP Docker Gateway Backend")
 
     # Initialize database
-    from app.core.database import init_db, close_db
+    from app.core.database import close_db, init_db
+
     await init_db()
     logger.info("Database initialized")
 
     # Initialize Redis
-    from app.core.redis import init_redis, close_redis
+    from app.core.redis import close_redis, init_redis
+
     try:
         await init_redis()
         logger.info("Redis initialized")
@@ -34,6 +37,7 @@ async def lifespan(app: FastAPI):
 
     # Check Docker connection
     from app.core.docker_manager import docker_manager
+
     if docker_manager.is_connected():
         logger.info("Docker connection established")
     else:
@@ -62,7 +66,7 @@ def create_application() -> FastAPI:
         title="MCP Docker Gateway API",
         description="Backend API for MCP Docker Gateway Manager",
         version="1.0.0",
-        lifespan=lifespan
+        lifespan=lifespan,
     )
 
     # CORS middleware
@@ -82,10 +86,7 @@ def create_application() -> FastAPI:
     async def health_check():
         return JSONResponse(
             status_code=200,
-            content={
-                "status": "healthy",
-                "service": "mcp-docker-gateway-backend"
-            }
+            content={"status": "healthy", "service": "mcp-docker-gateway-backend"},
         )
 
     return app
@@ -95,9 +96,4 @@ app = create_application()
 
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
-    )
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

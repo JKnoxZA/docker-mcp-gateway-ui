@@ -1,7 +1,9 @@
 import logging
 import sys
 from typing import Optional
+
 import structlog
+
 from app.config.settings import settings
 
 
@@ -19,7 +21,7 @@ def setup_logging() -> None:
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
-            structlog.processors.JSONRenderer()
+            structlog.processors.JSONRenderer(),
         ],
         wrapper_class=structlog.stdlib.BoundLogger,
         logger_factory=structlog.stdlib.LoggerFactory(),

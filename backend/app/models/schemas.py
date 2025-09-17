@@ -1,11 +1,13 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class ProjectStatus(str, Enum):
     """Project status enumeration"""
+
     CREATED = "created"
     BUILDING = "building"
     BUILD_FAILED = "build_failed"
@@ -16,6 +18,7 @@ class ProjectStatus(str, Enum):
 
 class ServerStatus(str, Enum):
     """Server status enumeration"""
+
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
     ERROR = "error"
@@ -23,6 +26,7 @@ class ServerStatus(str, Enum):
 
 class TransportType(str, Enum):
     """Transport type enumeration"""
+
     STDIO = "stdio"
     SSE = "sse"
     WEBSOCKET = "websocket"
@@ -31,6 +35,7 @@ class TransportType(str, Enum):
 # MCP Project Models
 class MCPProjectBase(BaseModel):
     """Base MCP project model"""
+
     name: str = Field(..., min_length=1, max_length=100)
     description: str = Field(..., min_length=1, max_length=500)
     python_version: str = Field(default="3.11", pattern=r"^3\.(8|9|10|11|12)$")
@@ -38,12 +43,14 @@ class MCPProjectBase(BaseModel):
 
 class MCPProjectCreate(MCPProjectBase):
     """MCP project creation model"""
+
     tools: List[Dict[str, Any]] = Field(default_factory=list)
     requirements: List[str] = Field(default_factory=list)
 
 
 class MCPProject(MCPProjectBase):
     """Full MCP project model"""
+
     id: int
     tools: List[Dict[str, Any]] = Field(default_factory=list)
     requirements: List[str] = Field(default_factory=list)
@@ -54,6 +61,7 @@ class MCPProject(MCPProjectBase):
 
 class MCPProjectResponse(BaseModel):
     """MCP project response model"""
+
     id: int
     name: str
     description: str
@@ -65,6 +73,7 @@ class MCPProjectResponse(BaseModel):
 # MCP Server Models
 class MCPServerBase(BaseModel):
     """Base MCP server model"""
+
     name: str = Field(..., min_length=1, max_length=100)
     description: str = Field(..., min_length=1, max_length=500)
     server_type: str = Field(default="custom", alias="type")
@@ -73,12 +82,14 @@ class MCPServerBase(BaseModel):
 
 class MCPServerCreate(MCPServerBase):
     """MCP server creation model"""
+
     url: Optional[str] = None
     api_key: Optional[str] = None
 
 
 class MCPServer(MCPServerBase):
     """Full MCP server model"""
+
     id: int
     url: Optional[str] = None
     tools: List[Dict[str, Any]] = Field(default_factory=list)
@@ -89,6 +100,7 @@ class MCPServer(MCPServerBase):
 
 class MCPServerResponse(BaseModel):
     """MCP server response model"""
+
     id: int
     name: str
     description: str
@@ -101,12 +113,14 @@ class MCPServerResponse(BaseModel):
 # LLM Client Models
 class LLMClientBase(BaseModel):
     """Base LLM client model"""
+
     name: str = Field(..., min_length=1, max_length=100)
     client_type: str = Field(..., alias="type")
 
 
 class LLMClient(LLMClientBase):
     """Full LLM client model"""
+
     endpoint: Optional[str] = None
     api_key: Optional[str] = None
     connected_servers: List[str] = Field(default_factory=list)
@@ -115,6 +129,7 @@ class LLMClient(LLMClientBase):
 
 class LLMClientResponse(BaseModel):
     """LLM client response model"""
+
     name: str
     client_type: str
     status: str
@@ -124,6 +139,7 @@ class LLMClientResponse(BaseModel):
 # Tool Permission Models
 class PermissionStatus(str, Enum):
     """Permission status enumeration"""
+
     ALLOWED = "allowed"
     DENIED = "denied"
     PENDING = "pending"
@@ -131,6 +147,7 @@ class PermissionStatus(str, Enum):
 
 class ToolPermission(BaseModel):
     """Tool permission model"""
+
     tool_name: str
     server_name: str
     client_name: str
@@ -140,6 +157,7 @@ class ToolPermission(BaseModel):
 
 class ToolPermissionCreate(BaseModel):
     """Tool permission creation model"""
+
     tool_name: str
     server_name: str
     client_name: str
@@ -148,6 +166,7 @@ class ToolPermissionCreate(BaseModel):
 # Secret Management Models
 class SecretCreate(BaseModel):
     """Secret creation model"""
+
     key: str = Field(..., min_length=1, max_length=100)
     value: str = Field(..., min_length=1)
     description: str = Field(default="", max_length=500)
@@ -155,6 +174,7 @@ class SecretCreate(BaseModel):
 
 class SecretResponse(BaseModel):
     """Secret response model (without value)"""
+
     key: str
     description: str
     created_at: datetime
@@ -164,6 +184,7 @@ class SecretResponse(BaseModel):
 # Docker Container Models
 class ContainerInfo(BaseModel):
     """Docker container information"""
+
     id: str
     name: str
     image: str
@@ -175,6 +196,7 @@ class ContainerInfo(BaseModel):
 # Build Models
 class BuildStatus(str, Enum):
     """Build status enumeration"""
+
     PENDING = "pending"
     BUILDING = "building"
     SUCCESS = "success"
@@ -183,6 +205,7 @@ class BuildStatus(str, Enum):
 
 class BuildInfo(BaseModel):
     """Build information model"""
+
     build_id: str
     project_name: str
     status: BuildStatus
@@ -194,6 +217,7 @@ class BuildInfo(BaseModel):
 # Gateway Status Models
 class GatewayStatus(BaseModel):
     """Gateway status model"""
+
     status: str
     uptime: str
     connected_servers: int
@@ -204,6 +228,7 @@ class GatewayStatus(BaseModel):
 # Response wrapper models
 class APIResponse(BaseModel):
     """Generic API response wrapper"""
+
     message: str
     data: Optional[Any] = None
     success: bool = True
@@ -211,6 +236,7 @@ class APIResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Error response model"""
+
     message: str
     detail: Optional[str] = None
     success: bool = False

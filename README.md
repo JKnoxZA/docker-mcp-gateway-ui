@@ -2,6 +2,8 @@
 
 A comprehensive web-based management platform for Model Context Protocol (MCP) servers with Docker integrations.
 
+[![CI/CD Pipeline](https://github.com/JKnoxZA/docker-mcp-gateway-ui/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/JKnoxZA/docker-mcp-gateway-ui/actions/workflows/ci.yml)
+
 ## 🎯 Overview
 
 This application provides a Docker Desktop-like interface for managing MCP servers in headless Linux environments, along with powerful tools for developing custom MCP servers. It transforms complex command-line workflows into intuitive visual experiences.

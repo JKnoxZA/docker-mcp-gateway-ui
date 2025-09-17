@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
-from typing import List
 import logging
+from typing import List
+
+from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

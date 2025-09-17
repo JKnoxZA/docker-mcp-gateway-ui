@@ -1,14 +1,17 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, JSON, ForeignKey, Enum
+import enum
+
+from sqlalchemy import (JSON, Boolean, Column, DateTime, Enum, ForeignKey,
+                        Integer, String, Text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-import enum
 
 Base = declarative_base()
 
 
 class ProjectStatusEnum(enum.Enum):
     """Project status enumeration"""
+
     CREATED = "created"
     BUILDING = "building"
     BUILD_FAILED = "build_failed"
@@ -19,6 +22,7 @@ class ProjectStatusEnum(enum.Enum):
 
 class ServerStatusEnum(enum.Enum):
     """Server status enumeration"""
+
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
     ERROR = "error"
@@ -26,6 +30,7 @@ class ServerStatusEnum(enum.Enum):
 
 class TransportTypeEnum(enum.Enum):
     """Transport type enumeration"""
+
     STDIO = "stdio"
     SSE = "sse"
     WEBSOCKET = "websocket"
@@ -33,6 +38,7 @@ class TransportTypeEnum(enum.Enum):
 
 class PermissionStatusEnum(enum.Enum):
     """Permission status enumeration"""
+
     ALLOWED = "allowed"
     DENIED = "denied"
     PENDING = "pending"
@@ -40,6 +46,7 @@ class PermissionStatusEnum(enum.Enum):
 
 class User(Base):
     """User table"""
+
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -58,6 +65,7 @@ class User(Base):
 
 class MCPProject(Base):
     """MCP Project table"""
+
     __tablename__ = "mcp_projects"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -78,6 +86,7 @@ class MCPProject(Base):
 
 class MCPServer(Base):
     """MCP Server table"""
+
     __tablename__ = "mcp_servers"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -99,11 +108,14 @@ class MCPServer(Base):
 
 class LLMClient(Base):
     """LLM Client table"""
+
     __tablename__ = "llm_clients"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False, unique=True, index=True)
-    client_type = Column(String(50), nullable=False)  # claude, cursor, lm_studio, custom
+    client_type = Column(
+        String(50), nullable=False
+    )  # claude, cursor, lm_studio, custom
     endpoint = Column(String(500))  # For custom clients
     config = Column(JSON, default=dict)  # Store client configuration as JSON
     status = Column(String(50), default="available")
@@ -117,6 +129,7 @@ class LLMClient(Base):
 
 class ClientConnection(Base):
     """Client-Server connection table"""
+
     __tablename__ = "client_connections"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -133,13 +146,16 @@ class ClientConnection(Base):
 
 class ToolPermission(Base):
     """Tool permission table"""
+
     __tablename__ = "tool_permissions"
 
     id = Column(Integer, primary_key=True, index=True)
     tool_name = Column(String(100), nullable=False)
     client_id = Column(Integer, ForeignKey("llm_clients.id"), nullable=False)
     server_id = Column(Integer, ForeignKey("mcp_servers.id"), nullable=False)
-    permission = Column(Enum(PermissionStatusEnum), default=PermissionStatusEnum.PENDING)
+    permission = Column(
+        Enum(PermissionStatusEnum), default=PermissionStatusEnum.PENDING
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -150,6 +166,7 @@ class ToolPermission(Base):
 
 class Secret(Base):
     """Secret storage table"""
+
     __tablename__ = "secrets"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -163,6 +180,7 @@ class Secret(Base):
 
 class BuildHistory(Base):
     """Build history table"""
+
     __tablename__ = "build_history"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -179,11 +197,14 @@ class BuildHistory(Base):
 
 class AuditLog(Base):
     """Audit log table for tracking user actions"""
+
     __tablename__ = "audit_logs"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    action = Column(String(100), nullable=False)  # create, update, delete, execute, etc.
+    action = Column(
+        String(100), nullable=False
+    )  # create, update, delete, execute, etc.
     resource_type = Column(String(50), nullable=False)  # project, server, client, etc.
     resource_id = Column(String(100))  # ID of the affected resource
     details = Column(JSON, default=dict)  # Additional details about the action
@@ -197,6 +218,7 @@ class AuditLog(Base):
 
 class UserSession(Base):
     """User session table"""
+
     __tablename__ = "user_sessions"
 
     id = Column(Integer, primary_key=True, index=True)

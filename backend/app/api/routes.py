@@ -1,11 +1,11 @@
 from fastapi import APIRouter
 
+from app.api.auth.routes import router as auth_router
+from app.api.clients.routes import router as clients_router
+from app.api.docker.routes import router as docker_router
 # Import route modules
 from app.api.projects.routes import router as projects_router
 from app.api.servers.routes import router as servers_router
-from app.api.clients.routes import router as clients_router
-from app.api.docker.routes import router as docker_router
-from app.api.auth.routes import router as auth_router
 
 # Main API router
 api_router = APIRouter()

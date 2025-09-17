@@ -1,12 +1,12 @@
 """Health check utilities for the MCP Gateway application"""
 
-from typing import Dict, Any
 import asyncio
 from datetime import datetime
+from typing import Any, Dict
 
 from app.core.database import AsyncSessionLocal, engine
-from app.core.redis import redis_client
 from app.core.docker_manager import docker_manager
+from app.core.redis import redis_client
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -23,14 +23,14 @@ async def check_database_health() -> Dict[str, Any]:
         return {
             "status": "healthy",
             "message": "Database connection successful",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
     except Exception as e:
         logger.error("Database health check failed", error=str(e))
         return {
             "status": "unhealthy",
             "message": f"Database connection failed: {str(e)}",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
 
@@ -50,20 +50,20 @@ async def check_redis_health() -> Dict[str, Any]:
             return {
                 "status": "healthy",
                 "message": "Redis connection and operations successful",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
         else:
             return {
                 "status": "unhealthy",
                 "message": "Redis operations failed",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
     except Exception as e:
         logger.error("Redis health check failed", error=str(e))
         return {
             "status": "unhealthy",
             "message": f"Redis connection failed: {str(e)}",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
 
@@ -74,7 +74,7 @@ async def check_docker_health() -> Dict[str, Any]:
             return {
                 "status": "unhealthy",
                 "message": "Docker daemon not accessible",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
         # Get basic Docker info
@@ -86,16 +86,16 @@ async def check_docker_health() -> Dict[str, Any]:
             "info": {
                 "containers": info.get("containers", 0),
                 "images": info.get("images", 0),
-                "server_version": info.get("server_version", "unknown")
+                "server_version": info.get("server_version", "unknown"),
             },
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
     except Exception as e:
         logger.error("Docker health check failed", error=str(e))
         return {
             "status": "unhealthy",
             "message": f"Docker health check failed: {str(e)}",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
 
@@ -107,7 +107,7 @@ async def get_comprehensive_health() -> Dict[str, Any]:
         check_database_health(),
         check_redis_health(),
         check_docker_health(),
-        return_exceptions=True
+        return_exceptions=True,
     )
 
     # Handle any exceptions from health checks
@@ -116,7 +116,7 @@ async def get_comprehensive_health() -> Dict[str, Any]:
             return {
                 "status": "unhealthy",
                 "message": f"{component_name} health check raised exception: {str(result)}",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
         return result
 
@@ -128,12 +128,11 @@ async def get_comprehensive_health() -> Dict[str, Any]:
     components = {
         "database": database_health,
         "redis": redis_health,
-        "docker": docker_health
+        "docker": docker_health,
     }
 
     all_healthy = all(
-        component["status"] == "healthy"
-        for component in components.values()
+        component["status"] == "healthy" for component in components.values()
     )
 
     overall_status = "healthy" if all_healthy else "unhealthy"
@@ -143,5 +142,5 @@ async def get_comprehensive_health() -> Dict[str, Any]:
         "timestamp": datetime.utcnow().isoformat(),
         "components": components,
         "version": "1.0.0",  # TODO: Get from app config
-        "environment": "development"  # TODO: Get from app config
+        "environment": "development",  # TODO: Get from app config
     }
