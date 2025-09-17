@@ -11,7 +11,8 @@
       "Bash(isort:*)",
       "Bash(black:*)",
       "Bash(mypy:*)",
-      "Read(//Users/jeandre/source/KnoxStudios/**)"
+      "Read(//Users/jeandre/source/KnoxStudios/**)",
+      "Bash(pytest:*)"
     ],
     "deny": [],
     "ask": []
