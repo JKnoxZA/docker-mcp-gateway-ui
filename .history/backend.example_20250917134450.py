@@ -1,16 +1,17 @@
 # MCP Workflow Automation Backend
 # This demonstrates the core backend logic for automating the MCP development workflow
 
-from fastapi import FastAPI, WebSocket, HTTPException
-from pydantic import BaseModel
-from typing import Dict, List, Optional
-import docker
-import yaml
-import os
 import asyncio
 import json
-from pathlib import Path
+import os
 import shutil
+from pathlib import Path
+from typing import Dict, List, Optional
+
+import docker
+import yaml
+from fastapi import FastAPI, HTTPException, WebSocket
+from pydantic import BaseModel
 
 app = FastAPI(title="MCP Docker Gateway Manager")
 

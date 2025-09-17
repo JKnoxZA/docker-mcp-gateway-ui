@@ -83,7 +83,9 @@ class MCPProject(Base):
     python_version = Column(String(10), default="3.11")
     tools = Column(JSON, default=list)  # Store tool configurations as JSON
     requirements = Column(JSON, default=list)  # Store Python requirements as JSON
-    status = Column(Enum(ProjectStatusEnum), default=ProjectStatusEnum.CREATED)
+    status: Column[ProjectStatusEnum] = Column(
+        Enum(ProjectStatusEnum), default=ProjectStatusEnum.CREATED
+    )
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -91,6 +93,9 @@ class MCPProject(Base):
     # Relationships
     owner = relationship("User", back_populates="projects")
     builds = relationship("BuildHistory", back_populates="project")
+    files = relationship("ProjectFile", back_populates="project")
+    containers = relationship("DockerContainer", back_populates="project")
+    build_logs = relationship("BuildLog", back_populates="project")
 
 
 class MCPServer(Base):
@@ -103,10 +108,14 @@ class MCPServer(Base):
     description = Column(Text, nullable=False)
     server_type = Column(String(50), default="custom")  # official, custom, remote
     url = Column(String(500))  # For remote servers
-    transport = Column(Enum(TransportTypeEnum), default=TransportTypeEnum.STDIO)
+    transport: Column[TransportTypeEnum] = Column(
+        Enum(TransportTypeEnum), default=TransportTypeEnum.STDIO
+    )
     tools = Column(JSON, default=list)  # Store available tools as JSON
     config = Column(JSON, default=dict)  # Store server configuration as JSON
-    status = Column(Enum(ServerStatusEnum), default=ServerStatusEnum.DISCONNECTED)
+    status: Column[ServerStatusEnum] = Column(
+        Enum(ServerStatusEnum), default=ServerStatusEnum.DISCONNECTED
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -162,7 +171,7 @@ class ToolPermission(Base):
     tool_name = Column(String(100), nullable=False)
     client_id = Column(Integer, ForeignKey("llm_clients.id"), nullable=False)
     server_id = Column(Integer, ForeignKey("mcp_servers.id"), nullable=False)
-    permission = Column(
+    permission: Column[PermissionStatusEnum] = Column(
         Enum(PermissionStatusEnum), default=PermissionStatusEnum.PENDING
     )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -238,3 +247,76 @@ class UserSession(Base):
 
     # Relationships
     user = relationship("User")
+
+
+class MCPTemplate(Base):
+    """MCP Template table"""
+
+    __tablename__ = "mcp_templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False, index=True)
+    description = Column(Text, nullable=False)
+    language = Column(String(50), nullable=False)  # python, javascript, go, etc.
+    framework = Column(String(50), nullable=False)  # fastapi, express, gin, etc.
+    template_files = Column(JSON, default=dict)  # Store template files as JSON
+    default_config = Column(JSON, default=dict)  # Store default configuration
+    tags = Column(JSON, default=list)  # Store tags as JSON array
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class ProjectFile(Base):
+    """Project file table"""
+
+    __tablename__ = "project_files"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("mcp_projects.id"), nullable=False)
+    file_path = Column(String(500), nullable=False)  # Relative path within project
+    file_content = Column(Text, nullable=False)
+    file_size = Column(Integer, default=0)  # File size in bytes
+    mime_type = Column(String(100), default="text/plain")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    project = relationship("MCPProject", back_populates="files")
+
+
+class DockerContainer(Base):
+    """Docker container table"""
+
+    __tablename__ = "docker_containers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("mcp_projects.id"), nullable=True)
+    container_id = Column(String(100), nullable=False, unique=True, index=True)
+    name = Column(String(100), nullable=False)
+    image = Column(String(200), nullable=False)
+    status = Column(String(50), nullable=False)  # running, exited, etc.
+    ports = Column(JSON, default=dict)  # Port mappings as JSON
+    environment = Column(JSON, default=list)  # Environment variables as JSON
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    project = relationship("MCPProject", back_populates="containers")
+
+
+class BuildLog(Base):
+    """Build log table"""
+
+    __tablename__ = "build_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("mcp_projects.id"), nullable=False)
+    build_id = Column(String(100), nullable=False, index=True)
+    stage = Column(String(50), nullable=False)  # setup, dependencies, build, etc.
+    message = Column(Text, nullable=False)
+    level = Column(String(20), default="info")  # info, warning, error, success
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    project = relationship("MCPProject", back_populates="build_logs")

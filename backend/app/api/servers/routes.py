@@ -3,7 +3,12 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException
 
-from app.models.schemas import MCPServer, MCPServerCreate, MCPServerResponse
+from app.models.schemas import (
+    MCPServer,
+    MCPServerCreate,
+    MCPServerResponse,
+    ServerStatus,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -22,7 +27,12 @@ async def add_server(server: MCPServerCreate):
     # TODO: Implement server addition logic
     logger.info(f"Adding server: {server.name}")
     return MCPServerResponse(
-        id=1, name=server.name, description=server.description, status="disconnected"
+        id=1,
+        name=server.name,
+        description=server.description,
+        server_type=server.server_type,
+        transport=server.transport,
+        status=ServerStatus.DISCONNECTED,
     )
 
 

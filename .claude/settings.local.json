@@ -10,7 +10,8 @@
       "Bash(npm run test:coverage:*)",
       "Bash(isort:*)",
       "Bash(black:*)",
-      "Bash(mypy:*)"
+      "Bash(mypy:*)",
+      "Read(//Users/jeandre/source/KnoxStudios/**)"
     ],
     "deny": [],
     "ask": []

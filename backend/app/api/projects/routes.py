@@ -3,7 +3,12 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException
 
-from app.models.schemas import MCPProject, MCPProjectCreate, MCPProjectResponse
+from app.models.schemas import (
+    MCPProject,
+    MCPProjectCreate,
+    MCPProjectResponse,
+    ProjectStatus,
+)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -22,7 +27,10 @@ async def create_project(project: MCPProjectCreate):
     # TODO: Implement project creation logic
     logger.info(f"Creating project: {project.name}")
     return MCPProjectResponse(
-        id=1, name=project.name, description=project.description, status="created"
+        id=1,
+        name=project.name,
+        description=project.description,
+        status=ProjectStatus.CREATED,
     )
 
 

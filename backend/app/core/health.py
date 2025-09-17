@@ -4,6 +4,8 @@ import asyncio
 from datetime import datetime
 from typing import Any, Dict
 
+from sqlalchemy import text
+
 from app.core.database import AsyncSessionLocal, engine
 from app.core.docker_manager import docker_manager
 from app.core.redis import redis_client
@@ -17,7 +19,7 @@ async def check_database_health() -> Dict[str, Any]:
     try:
         async with AsyncSessionLocal() as session:
             # Simple query to test connection
-            result = await session.execute("SELECT 1")
+            result = await session.execute(text("SELECT 1"))
             await session.commit()
 
         return {
@@ -103,12 +105,13 @@ async def get_comprehensive_health() -> Dict[str, Any]:
     """Get comprehensive health status of all system components"""
 
     # Run all health checks concurrently
-    database_health, redis_health, docker_health = await asyncio.gather(
+    results = await asyncio.gather(
         check_database_health(),
         check_redis_health(),
         check_docker_health(),
         return_exceptions=True,
     )
+    database_health, redis_health, docker_health = results[0], results[1], results[2]
 
     # Handle any exceptions from health checks
     def format_health_result(result, component_name):
@@ -120,15 +123,19 @@ async def get_comprehensive_health() -> Dict[str, Any]:
             }
         return result
 
-    database_health = format_health_result(database_health, "Database")
-    redis_health = format_health_result(redis_health, "Redis")
-    docker_health = format_health_result(docker_health, "Docker")
+    formatted_database_health: Dict[str, Any] = format_health_result(
+        database_health, "Database"
+    )
+    formatted_redis_health: Dict[str, Any] = format_health_result(redis_health, "Redis")
+    formatted_docker_health: Dict[str, Any] = format_health_result(
+        docker_health, "Docker"
+    )
 
     # Determine overall health status
     components = {
-        "database": database_health,
-        "redis": redis_health,
-        "docker": docker_health,
+        "database": formatted_database_health,
+        "redis": formatted_redis_health,
+        "docker": formatted_docker_health,
     }
 
     all_healthy = all(

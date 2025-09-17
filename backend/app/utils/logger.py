@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Optional
+from typing import Any, Optional
 
 import structlog
 
@@ -42,7 +42,7 @@ def setup_logging() -> None:
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
-def get_logger(name: Optional[str] = None) -> structlog.stdlib.BoundLogger:
+def get_logger(name: Optional[str] = None) -> Any:
     """Get a configured logger instance"""
     return structlog.get_logger(name)
 
