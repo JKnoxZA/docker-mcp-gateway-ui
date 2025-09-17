@@ -168,18 +168,17 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Container Registry
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: bliksemstudios
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Extract backend metadata
         id: backend-meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/jknoxza/docker-mcp-gateway-ui/backend
+          images: bliksemstudios/docker-mcp-gateway-ui-backend
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -190,7 +189,7 @@ jobs:
         id: frontend-meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/jknoxza/docker-mcp-gateway-ui/frontend
+          images: bliksemstudios/docker-mcp-gateway-ui-frontend
           tags: |
             type=ref,event=branch
             type=ref,event=pr
