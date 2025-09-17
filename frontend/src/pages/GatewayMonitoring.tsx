@@ -1,5 +1,5 @@
 import React from 'react'
-import { Monitor, Server, Users, Clock, Link } from 'lucide-react'
+import { Server, Users, Clock, Link } from 'lucide-react'
 
 import { useGatewayStatus } from '@/hooks/useAPI'
 

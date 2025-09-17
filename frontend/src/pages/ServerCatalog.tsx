@@ -61,7 +61,7 @@ const ServerCatalog: React.FC = () => {
                   </span>
                 </div>
                 {server.requires_api_key && (
-                  <Key className="h-4 w-4 text-yellow-600" title="Requires API Key" />
+                  <Key className="h-4 w-4 text-yellow-600" />
                 )}
               </div>
 

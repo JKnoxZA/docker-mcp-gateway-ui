@@ -107,7 +107,7 @@ jobs:
       - name: Run frontend linting
         working-directory: ./frontend
         run: |
-          npm run lint
+          npm run lint:ci
           npm run type-check
 
       - name: Run frontend tests

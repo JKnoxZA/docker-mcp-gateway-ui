@@ -3,7 +3,10 @@
     "allow": [
       "Bash(python:*)",
       "Bash(pip3 install:*)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run type-check:*)"
     ],
     "deny": [],
     "ask": []
