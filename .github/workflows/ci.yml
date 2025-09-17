@@ -175,13 +175,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
+      - name: Extract backend metadata
+        id: backend-meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ghcr.io/${{ github.repository }}/backend
-            ghcr.io/${{ github.repository }}/frontend
+          images: ghcr.io/jknoxza/docker-mcp-gateway-ui/backend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Extract frontend metadata
+        id: frontend-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/jknoxza/docker-mcp-gateway-ui/frontend
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -194,7 +203,8 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile.dev
           push: true
-          tags: ghcr.io/${{ github.repository }}/backend:latest
+          tags: ${{ steps.backend-meta.outputs.tags }}
+          labels: ${{ steps.backend-meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -204,7 +214,8 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile.dev
           push: true
-          tags: ghcr.io/${{ github.repository }}/frontend:latest
+          tags: ${{ steps.frontend-meta.outputs.tags }}
+          labels: ${{ steps.frontend-meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
