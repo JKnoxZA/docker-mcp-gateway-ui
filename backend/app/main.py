@@ -8,10 +8,12 @@ from fastapi.responses import JSONResponse
 
 from app.api.routes import api_router
 from app.config.settings import settings
+from app.middleware.logging_middleware import LoggingMiddleware, SecurityLoggingMiddleware
+from app.utils.logging_config import setup_logging, get_logger
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Setup comprehensive logging
+setup_logging()
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
@@ -43,6 +45,15 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("Docker connection failed")
 
+    # Initialize WebSocket manager
+    from app.core.websocket_manager import websocket_manager
+
+    try:
+        await websocket_manager.start_redis_subscriber()
+        logger.info("WebSocket manager initialized")
+    except Exception as e:
+        logger.warning(f"WebSocket manager initialization failed: {e}")
+
     yield
 
     # Shutdown
@@ -68,6 +79,10 @@ def create_application() -> FastAPI:
         version="1.0.0",
         lifespan=lifespan,
     )
+
+    # Logging middleware (add first for comprehensive logging)
+    app.add_middleware(LoggingMiddleware)
+    app.add_middleware(SecurityLoggingMiddleware)
 
     # CORS middleware
     app.add_middleware(

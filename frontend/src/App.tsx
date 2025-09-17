@@ -8,6 +8,7 @@ import ToolPermissions from './pages/ToolPermissions'
 import SecretsManagement from './pages/SecretsManagement'
 import GatewayMonitoring from './pages/GatewayMonitoring'
 import ContainerManagement from './pages/ContainerManagement'
+import ImageManagement from './pages/ImageManagement'
 import ProjectManagement from './pages/ProjectManagement'
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
         <Route path="/secrets" element={<SecretsManagement />} />
         <Route path="/gateway" element={<GatewayMonitoring />} />
         <Route path="/containers" element={<ContainerManagement />} />
+        <Route path="/images" element={<ImageManagement />} />
         <Route path="/projects" element={<ProjectManagement />} />
 
         {/* 404 fallback */}

@@ -13,6 +13,7 @@ import {
   X,
   Bell,
   User,
+  HardDrive,
 } from 'lucide-react'
 
 import { NavItem } from '@/types'
@@ -33,6 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { key: 'secrets', label: 'Secrets', icon: Key, path: '/secrets' },
     { key: 'gateway', label: 'Gateway', icon: Monitor, path: '/gateway' },
     { key: 'containers', label: 'Containers', icon: Container, path: '/containers' },
+    { key: 'images', label: 'Images', icon: HardDrive, path: '/images' },
     { key: 'projects', label: 'Projects', icon: FolderOpen, path: '/projects' },
   ]
 

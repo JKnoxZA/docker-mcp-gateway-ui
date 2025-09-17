@@ -182,6 +182,18 @@ class SecretResponse(BaseModel):
 
 
 # Docker Container Models
+class ContainerStatus(str, Enum):
+    """Container status enumeration"""
+
+    CREATED = "created"
+    RUNNING = "running"
+    PAUSED = "paused"
+    RESTARTING = "restarting"
+    REMOVING = "removing"
+    EXITED = "exited"
+    DEAD = "dead"
+
+
 class ContainerInfo(BaseModel):
     """Docker container information"""
 
@@ -189,8 +201,113 @@ class ContainerInfo(BaseModel):
     name: str
     image: str
     status: str
-    created: datetime
+    created: str
     ports: Dict[str, Any] = Field(default_factory=dict)
+    labels: Dict[str, str] = Field(default_factory=dict)
+    state: Dict[str, Any] = Field(default_factory=dict)
+    mounts: List[str] = Field(default_factory=list)
+
+
+class ContainerDetails(ContainerInfo):
+    """Detailed Docker container information"""
+
+    started: Optional[str] = None
+    environment: List[str] = Field(default_factory=list)
+    network_settings: Dict[str, Any] = Field(default_factory=dict)
+    logs_path: str = ""
+
+
+class ContainerAction(BaseModel):
+    """Container action request"""
+
+    timeout: Optional[int] = Field(default=10, ge=1, le=300)
+    force: Optional[bool] = False
+
+
+class ContainerActionResponse(BaseModel):
+    """Container action response"""
+
+    container_id: str
+    status: str
+    message: str
+
+
+# Docker Image Models
+class ImageInfo(BaseModel):
+    """Docker image information"""
+
+    id: str
+    tags: List[str] = Field(default_factory=list)
+    created: str
+    size: int
+    labels: Dict[str, str] = Field(default_factory=dict)
+    architecture: str = "unknown"
+    os: str = "unknown"
+
+
+class ImageBuildRequest(BaseModel):
+    """Image build request"""
+
+    path: str = Field(..., description="Build context path")
+    tag: str = Field(..., description="Image tag")
+    dockerfile: str = Field(default="Dockerfile", description="Dockerfile name")
+
+
+class ImageBuildResponse(BaseModel):
+    """Image build response"""
+
+    status: str
+    message: str
+    timestamp: str
+
+
+class ImageActionResponse(BaseModel):
+    """Image action response"""
+
+    image_id: str
+    status: str
+    message: str
+
+
+# Docker Network Models
+class NetworkInfo(BaseModel):
+    """Docker network information"""
+
+    id: str
+    name: str
+    driver: str
+    scope: str
+    created: str
+    containers: List[str] = Field(default_factory=list)
+
+
+# Docker Volume Models
+class VolumeInfo(BaseModel):
+    """Docker volume information"""
+
+    name: str
+    driver: str
+    mountpoint: str
+    created: str
+    labels: Dict[str, str] = Field(default_factory=dict)
+    scope: str
+
+
+# Docker System Models
+class SystemInfo(BaseModel):
+    """Docker system information"""
+
+    containers: int = 0
+    containers_running: int = 0
+    containers_paused: int = 0
+    containers_stopped: int = 0
+    images: int = 0
+    server_version: str = "unknown"
+    architecture: str = "unknown"
+    os: str = "unknown"
+    total_memory: int = 0
+    cpu_count: int = 0
+    storage_driver: str = "unknown"
 
 
 # Build Models

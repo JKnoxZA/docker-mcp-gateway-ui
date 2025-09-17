@@ -228,36 +228,73 @@ export const secretAPI = {
 // Docker API
 export const dockerAPI = {
   // List containers
-  listContainers: (): Promise<{ containers: ContainerInfo[] }> =>
-    api.get('/api/docker/containers/').then(handleResponse),
+  listContainers: (all?: boolean): Promise<ContainerInfo[]> =>
+    api.get('/api/docker/containers/', { params: { all_containers: all ?? true } }).then(handleResponse),
+
+  // Get container details
+  getContainer: (id: string): Promise<ContainerInfo & {
+    started?: string;
+    environment?: string[];
+    network_settings?: Record<string, any>;
+    logs_path?: string;
+  }> =>
+    api.get(`/api/docker/containers/${id}`).then(handleResponse),
 
   // Start container
-  startContainer: (id: string): Promise<APIResponse> =>
+  startContainer: (id: string): Promise<{ container_id: string; status: string; message: string }> =>
     api.post(`/api/docker/containers/${id}/start`).then(handleResponse),
 
   // Stop container
-  stopContainer: (id: string): Promise<APIResponse> =>
-    api.post(`/api/docker/containers/${id}/stop`).then(handleResponse),
+  stopContainer: (id: string, timeout?: number): Promise<{ container_id: string; status: string; message: string }> =>
+    api.post(`/api/docker/containers/${id}/stop`, { timeout: timeout ?? 10 }).then(handleResponse),
+
+  // Restart container
+  restartContainer: (id: string, timeout?: number): Promise<{ container_id: string; status: string; message: string }> =>
+    api.post(`/api/docker/containers/${id}/restart`, { timeout: timeout ?? 10 }).then(handleResponse),
 
   // Remove container
-  removeContainer: (id: string): Promise<APIResponse> =>
-    api.delete(`/api/docker/containers/${id}`).then(handleResponse),
+  removeContainer: (id: string, force?: boolean): Promise<{ container_id: string; status: string; message: string }> =>
+    api.delete(`/api/docker/containers/${id}`, { data: { force: force ?? false } }).then(handleResponse),
 
   // Get container logs
-  getContainerLogs: (id: string): Promise<{ logs: string[] }> =>
-    api.get(`/api/docker/containers/${id}/logs`).then(handleResponse),
+  getContainerLogs: (id: string, tail?: number): Promise<{ logs: string[] }> =>
+    api.get(`/api/docker/containers/${id}/logs`, { params: { tail: tail ?? 100, follow: false } }).then(handleResponse),
 
   // List images
-  listImages: (): Promise<{ images: ImageInfo[] }> =>
+  listImages: (): Promise<ImageInfo[]> =>
     api.get('/api/docker/images/').then(handleResponse),
 
   // Remove image
-  removeImage: (id: string): Promise<APIResponse> =>
-    api.delete(`/api/docker/images/${id}`).then(handleResponse),
+  removeImage: (id: string, force?: boolean): Promise<{ image_id: string; status: string; message: string }> =>
+    api.delete(`/api/docker/images/${id}`, { params: { force: force ?? false } }).then(handleResponse),
+
+  // List networks
+  listNetworks: (): Promise<{ id: string; name: string; driver: string; scope: string; created: string; containers: string[] }[]> =>
+    api.get('/api/docker/networks/').then(handleResponse),
+
+  // List volumes
+  listVolumes: (): Promise<{ name: string; driver: string; mountpoint: string; created: string; labels: Record<string, string>; scope: string }[]> =>
+    api.get('/api/docker/volumes/').then(handleResponse),
 
   // Get system info
-  getSystemInfo: (): Promise<any> =>
+  getSystemInfo: (): Promise<{
+    containers: number;
+    containers_running: number;
+    containers_paused: number;
+    containers_stopped: number;
+    images: number;
+    server_version: string;
+    architecture: string;
+    os: string;
+    total_memory: number;
+    cpu_count: number;
+    storage_driver: string;
+  }> =>
     api.get('/api/docker/system/info').then(handleResponse),
+
+  // Check Docker health
+  checkHealth: (): Promise<{ status: string; message: string }> =>
+    api.get('/api/docker/health').then(handleResponse),
 }
 
 // Gateway API

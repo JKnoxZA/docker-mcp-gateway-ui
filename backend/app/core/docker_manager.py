@@ -8,6 +8,13 @@ import docker
 import docker.errors
 
 from app.config.settings import settings
+from app.utils.docker_exceptions import (
+    map_docker_error,
+    is_recoverable_error,
+    DockerConnectionError,
+    DockerManagerException,
+)
+from app.utils.retry import retry_async, circuit_breaker
 
 logger = logging.getLogger(__name__)
 
@@ -17,19 +24,56 @@ class DockerManager:
 
     def __init__(self):
         self.client: Optional[docker.DockerClient] = None
+        self._connection_retry_count = 0
+        self._max_connection_retries = 3
         self._initialize_client()
 
     def _initialize_client(self):
-        """Initialize Docker client"""
+        """Initialize Docker client with retry logic"""
+        for attempt in range(self._max_connection_retries):
+            try:
+                # Try to connect to Docker daemon
+                self.client = docker.from_env(timeout=settings.DOCKER_TIMEOUT)
+                # Test connection
+                self.client.ping()
+                logger.info("Docker client initialized successfully")
+                self._connection_retry_count = 0
+                return
+            except docker.errors.DockerException as e:
+                self._connection_retry_count += 1
+                mapped_error = map_docker_error(e)
+
+                if attempt < self._max_connection_retries - 1:
+                    delay = 2 ** attempt  # Exponential backoff
+                    logger.warning(
+                        f"Docker connection attempt {attempt + 1} failed: {mapped_error}. "
+                        f"Retrying in {delay}s..."
+                    )
+                    import time
+                    time.sleep(delay)
+                else:
+                    logger.error(f"Failed to initialize Docker client after {self._max_connection_retries} attempts: {mapped_error}")
+                    self.client = None
+
+    @retry_async(
+        max_attempts=3,
+        delay=1.0,
+        exceptions=(docker.errors.DockerException, docker.errors.APIError),
+        condition=is_recoverable_error
+    )
+    async def _ensure_connection(self):
+        """Ensure Docker client is connected, reconnect if necessary"""
+        if not self.client:
+            raise DockerConnectionError("Docker client not initialized")
+
         try:
-            # Try to connect to Docker daemon
-            self.client = docker.from_env(timeout=settings.DOCKER_TIMEOUT)
-            # Test connection
-            self.client.ping()
-            logger.info("Docker client initialized successfully")
+            # Test connection with ping
+            await asyncio.to_thread(self.client.ping)
         except docker.errors.DockerException as e:
-            logger.error(f"Failed to initialize Docker client: {e}")
-            self.client = None
+            logger.warning(f"Docker connection test failed: {e}, attempting reconnection...")
+            self._initialize_client()
+            if not self.client:
+                raise DockerConnectionError("Failed to reconnect to Docker daemon")
 
     def is_connected(self) -> bool:
         """Check if Docker client is connected"""
@@ -38,98 +82,173 @@ class DockerManager:
         try:
             self.client.ping()
             return True
-        except docker.errors.DockerException:
+        except docker.errors.DockerException as e:
+            logger.debug(f"Docker connection check failed: {e}")
             return False
 
     # Container Management Methods
+    @circuit_breaker(failure_threshold=5, recovery_timeout=60.0)
+    @retry_async(
+        max_attempts=3,
+        delay=1.0,
+        exceptions=(docker.errors.APIError, docker.errors.DockerException),
+        condition=is_recoverable_error
+    )
     async def list_containers(
         self, all_containers: bool = True
     ) -> List[Dict[str, Any]]:
-        """List Docker containers"""
-        if not self.client:
-            raise docker.errors.DockerException("Docker client not available")
-
+        """List Docker containers with enhanced error handling"""
         try:
+            await self._ensure_connection()
+
             containers = await asyncio.to_thread(
                 self.client.containers.list, all=all_containers
             )
 
             container_list = []
             for container in containers:
-                container_info = {
-                    "id": container.id[:12],
-                    "name": container.name,
-                    "image": (
-                        container.image.tags[0] if container.image.tags else "unknown"
-                    ),
-                    "status": container.status,
-                    "created": container.attrs["Created"],
-                    "ports": container.ports,
-                    "labels": container.labels,
-                    "state": container.attrs.get("State", {}),
-                    "mounts": [
-                        mount["Source"] + ":" + mount["Destination"]
-                        for mount in container.attrs.get("Mounts", [])
-                    ],
-                }
-                container_list.append(container_info)
+                try:
+                    # Safely extract container information
+                    container_info = {
+                        "id": container.id[:12] if container.id else "unknown",
+                        "name": container.name or "unnamed",
+                        "image": self._safe_get_image_name(container),
+                        "status": container.status or "unknown",
+                        "created": container.attrs.get("Created", "unknown"),
+                        "ports": container.ports or {},
+                        "labels": container.labels or {},
+                        "state": container.attrs.get("State", {}),
+                        "mounts": self._safe_get_mounts(container),
+                    }
+                    container_list.append(container_info)
+                except Exception as e:
+                    logger.warning(f"Error extracting info for container {container.id}: {e}")
+                    # Include minimal info for problematic containers
+                    container_list.append({
+                        "id": getattr(container, 'id', 'unknown')[:12],
+                        "name": getattr(container, 'name', 'error'),
+                        "image": "error",
+                        "status": "error",
+                        "created": "unknown",
+                        "ports": {},
+                        "labels": {},
+                        "state": {},
+                        "mounts": [],
+                    })
 
             return container_list
+
         except docker.errors.DockerException as e:
-            logger.error(f"Error listing containers: {e}")
-            raise
+            mapped_error = map_docker_error(e)
+            logger.error(f"Error listing containers: {mapped_error}")
+            raise mapped_error
 
-    async def get_container(self, container_id: str) -> Dict[str, Any]:
-        """Get detailed container information"""
-        if not self.client:
-            raise docker.errors.DockerException("Docker client not available")
-
+    def _safe_get_image_name(self, container) -> str:
+        """Safely extract image name from container"""
         try:
+            if hasattr(container, 'image') and container.image:
+                if hasattr(container.image, 'tags') and container.image.tags:
+                    return container.image.tags[0]
+                elif hasattr(container.image, 'id'):
+                    return container.image.id[:12]
+            return "unknown"
+        except Exception:
+            return "error"
+
+    def _safe_get_mounts(self, container) -> List[str]:
+        """Safely extract mount information from container"""
+        try:
+            mounts = container.attrs.get("Mounts", [])
+            return [
+                f"{mount.get('Source', 'unknown')}:{mount.get('Destination', 'unknown')}"
+                for mount in mounts
+                if isinstance(mount, dict) and mount.get('Source') and mount.get('Destination')
+            ]
+        except Exception:
+            return []
+
+    @retry_async(
+        max_attempts=3,
+        delay=0.5,
+        exceptions=(docker.errors.APIError,),
+        condition=is_recoverable_error
+    )
+    async def get_container(self, container_id: str) -> Dict[str, Any]:
+        """Get detailed container information with enhanced error handling"""
+        try:
+            await self._ensure_connection()
+
             container = await asyncio.to_thread(
                 self.client.containers.get, container_id
             )
 
+            # Safely extract detailed container information
             return {
-                "id": container.id,
-                "name": container.name,
-                "image": container.image.tags[0] if container.image.tags else "unknown",
-                "status": container.status,
-                "created": container.attrs["Created"],
-                "started": container.attrs["State"].get("StartedAt"),
-                "ports": container.ports,
-                "environment": container.attrs["Config"].get("Env", []),
+                "id": container.id or "unknown",
+                "name": container.name or "unnamed",
+                "image": self._safe_get_image_name(container),
+                "status": container.status or "unknown",
+                "created": container.attrs.get("Created", "unknown"),
+                "started": container.attrs.get("State", {}).get("StartedAt", "unknown"),
+                "ports": container.ports or {},
+                "environment": container.attrs.get("Config", {}).get("Env", []),
                 "mounts": container.attrs.get("Mounts", []),
                 "network_settings": container.attrs.get("NetworkSettings", {}),
                 "state": container.attrs.get("State", {}),
                 "logs_path": container.attrs.get("LogPath", ""),
             }
+
         except docker.errors.NotFound:
             raise docker.errors.NotFound(f"Container {container_id} not found")
         except docker.errors.DockerException as e:
-            logger.error(f"Error getting container {container_id}: {e}")
-            raise
+            mapped_error = map_docker_error(e)
+            logger.error(f"Error getting container {container_id}: {mapped_error}")
+            raise mapped_error
 
+    @retry_async(
+        max_attempts=2,
+        delay=1.0,
+        exceptions=(docker.errors.APIError,),
+        condition=is_recoverable_error
+    )
     async def start_container(self, container_id: str) -> Dict[str, str]:
-        """Start a Docker container"""
-        if not self.client:
-            raise docker.errors.DockerException("Docker client not available")
-
+        """Start a Docker container with enhanced error handling"""
         try:
+            await self._ensure_connection()
+
             container = await asyncio.to_thread(
                 self.client.containers.get, container_id
             )
+
+            # Check current status before attempting to start
+            current_status = container.status
+            if current_status == "running":
+                logger.info(f"Container {container_id} is already running")
+                return {
+                    "container_id": container_id,
+                    "status": "already_running",
+                    "message": f"Container {container_id} is already running",
+                }
+
             await asyncio.to_thread(container.start)
+
+            # Verify the container started successfully
+            await asyncio.sleep(0.5)  # Brief delay to allow container to start
+            container.reload()
+            final_status = container.status
 
             return {
                 "container_id": container_id,
-                "status": "started",
-                "message": f"Container {container_id} started successfully",
+                "status": "started" if final_status == "running" else "start_attempted",
+                "message": f"Container {container_id} start {'successful' if final_status == 'running' else 'attempted'} (status: {final_status})",
             }
+
         except docker.errors.NotFound:
             raise docker.errors.NotFound(f"Container {container_id} not found")
         except docker.errors.DockerException as e:
-            logger.error(f"Error starting container {container_id}: {e}")
-            raise
+            mapped_error = map_docker_error(e)
+            logger.error(f"Error starting container {container_id}: {mapped_error}")
+            raise mapped_error
 
     async def stop_container(
         self, container_id: str, timeout: int = 10

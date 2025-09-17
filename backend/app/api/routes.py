@@ -1,12 +1,14 @@
 from fastapi import APIRouter
 
 from app.api.auth.routes import router as auth_router
+from app.api.builds.routes import router as builds_router
 from app.api.clients.routes import router as clients_router
 from app.api.docker.routes import router as docker_router
 
 # Import route modules
 from app.api.projects.routes import router as projects_router
 from app.api.servers.routes import router as servers_router
+from app.api.websocket.routes import router as websocket_router
 
 # Main API router
 api_router = APIRouter()
@@ -16,4 +18,6 @@ api_router.include_router(projects_router, prefix="/projects", tags=["projects"]
 api_router.include_router(servers_router, prefix="/mcp/servers", tags=["mcp-servers"])
 api_router.include_router(clients_router, prefix="/mcp/clients", tags=["mcp-clients"])
 api_router.include_router(docker_router, prefix="/docker", tags=["docker"])
+api_router.include_router(builds_router, prefix="/builds", tags=["builds"])
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
+api_router.include_router(websocket_router, prefix="", tags=["websocket"])

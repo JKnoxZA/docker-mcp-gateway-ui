@@ -1,11 +1,18 @@
+"""
+Application settings with environment-specific configurations.
+
+This module provides a centralized configuration system that supports
+different environments (development, testing, staging, production).
+"""
+
 import os
 from typing import List, Optional
 
 from pydantic_settings import BaseSettings
 
 
-class Settings(BaseSettings):
-    """Application settings"""
+class LegacySettings(BaseSettings):
+    """Legacy settings for backward compatibility"""
 
     # Application
     APP_NAME: str = "MCP Docker Gateway"
@@ -48,5 +55,31 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
 
 
-# Global settings instance
-settings = Settings()
+def get_legacy_settings() -> LegacySettings:
+    """Get legacy settings for backward compatibility"""
+    return LegacySettings()
+
+
+# Create settings instance based on environment
+try:
+    # Try to use environment-specific settings
+    from app.config.environments import create_settings
+    settings = create_settings()
+except ImportError:
+    # Fallback to legacy settings if environment config is not available
+    settings = get_legacy_settings()
+except Exception as e:
+    # Fallback to legacy settings if environment config fails
+    import logging
+    logging.warning(f"Failed to load environment settings: {e}. Using legacy settings.")
+    settings = get_legacy_settings()
+
+
+# Export commonly used settings for convenience
+APP_NAME = settings.APP_NAME
+DEBUG = getattr(settings, 'DEBUG', False)
+LOG_LEVEL = getattr(settings, 'LOG_LEVEL', 'INFO')
+DATABASE_URL = settings.DATABASE_URL
+REDIS_URL = getattr(settings, 'REDIS_URL', 'redis://localhost:6379')
+SECRET_KEY = getattr(settings, 'SECRET_KEY', 'default-secret-key')
+ALLOWED_HOSTS = getattr(settings, 'ALLOWED_HOSTS', ['*'])
